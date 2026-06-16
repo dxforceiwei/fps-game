@@ -48,17 +48,30 @@ namespace FPS.EditorTools
             var oldMuzzle = cam.transform.Find("Muzzle");
             if (oldMuzzle != null) Object.DestroyImmediate(oldMuzzle.gameObject);
 
-            // 槍模型：掛在相機底下，放在右下前方當 view model
+            // 槍模型：掛在相機底下，自動量大小縮放到看得到，再放到右下前方當 view model
             var model = (GameObject)PrefabUtility.InstantiatePrefab(fbx, cam.transform);
             model.name = "GunModel";
-            model.transform.localPosition = new Vector3(0.18f, -0.18f, 0.45f);
-            model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // 朝向之後在 Scene 微調
-            model.transform.localScale = Vector3.one * 0.5f;
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+            model.transform.localScale = Vector3.one;
+
+            // 量測模型實際大小 → 縮放到最長邊約 0.3 單位（不管原始 fbx 多大/多小都看得到）
+            var rends = model.GetComponentsInChildren<Renderer>();
+            if (rends.Length > 0)
+            {
+                Bounds b = rends[0].bounds;
+                foreach (var r in rends) b.Encapsulate(r.bounds);
+                float maxDim = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+                float factor = maxDim > 0.0001f ? 0.3f / maxDim : 1f;
+                model.transform.localScale = Vector3.one * factor;
+            }
+            model.transform.localPosition = new Vector3(0.15f, -0.15f, 0.35f);
+            model.transform.localRotation = Quaternion.Euler(0f, 90f, 0f); // 槍口朝向之後在 Scene 微調
 
             // Muzzle：掛相機底下、放在槍口大致位置，當曳光彈/閃光起點
             var muzzle = new GameObject("Muzzle");
             muzzle.transform.SetParent(cam.transform, false);
-            muzzle.transform.localPosition = new Vector3(0.18f, -0.12f, 0.9f);
+            muzzle.transform.localPosition = new Vector3(0.15f, -0.1f, 0.55f);
 
             // 把 Muzzle 寫進 Gun 的私有 [SerializeField] muzzle 欄位
             var so = new SerializedObject(gun);

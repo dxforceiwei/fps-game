@@ -3,22 +3,27 @@ using UnityEngine;
 namespace FPS
 {
     /// <summary>
-    /// 敵人：朝玩家走（只在水平面 XZ 移動）、貼近就週期性扣玩家血、自己血歸零就消失。
-    /// 跟 2D 的敵人同個概念，只是換成 3D 向量。需要 Collider 才能被射線打到，需要 Health。
+    /// 敵人（遠程兵）：跑向玩家，進入射程就停下來朝玩家開槍（射線命中扣血）。
+    /// 血歸零就消失。需要 Collider 才能被射線打到，需要 Health。
+    /// 動畫：Speed 參數切 idle/run，開槍時觸發 Attack。
     /// </summary>
     [RequireComponent(typeof(Health))]
     public class Enemy : MonoBehaviour
     {
+        [Header("移動")]
         [SerializeField] private float moveSpeed = 3f;
-        [SerializeField] private float contactDamage = 10f;
-        [Tooltip("貼到這個距離內就造成接觸傷害")]
-        [SerializeField] private float contactRange = 1.6f;
-        [SerializeField] private float contactInterval = 1f;
+
+        [Header("遠程攻擊")]
+        [Tooltip("進到這個距離內就停下來開槍")]
+        [SerializeField] private float shootRange = 12f;
+        [SerializeField] private float shotDamage = 8f;
+        [Tooltip("每幾秒開一槍")]
+        [SerializeField] private float fireInterval = 1.2f;
 
         private Transform player;
         private Health playerHealth;
         private Animator anim;       // 有掛模型才有；沒有就全部跳過（仍能跑膠囊版）
-        private float contactTimer;
+        private float fireTimer;
 
         // 動畫參數（由 FPS → 套用敵人模型+動畫 建好的 Animator 使用）
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
@@ -48,23 +53,28 @@ namespace FPS
             to.y = 0f; // 只在地面追，不要飛起來
             float dist = to.magnitude;
             Vector3 dir = dist > 0.001f ? to / dist : Vector3.zero;
-            bool inRange = dist <= contactRange;
+            bool inRange = dist <= shootRange;
 
-            // 到貼身距離就停下來打，否則往玩家走
+            // 射程外就追，進射程就停下來打
             if (!inRange) transform.position += dir * (moveSpeed * Time.deltaTime);
             if (dir != Vector3.zero) transform.rotation = Quaternion.LookRotation(dir);
 
-            // 驅動動畫：走路速度 → idle/run 切換
+            // 驅動動畫：移動時 run、停下時 idle（瞄準待機）
             if (anim != null) anim.SetFloat(SpeedHash, inRange ? 0f : moveSpeed, 0.1f, Time.deltaTime);
 
-            // 接觸傷害（同時播攻擊動畫）
-            contactTimer -= Time.deltaTime;
-            if (inRange && contactTimer <= 0f)
+            // 進射程定時開槍
+            fireTimer -= Time.deltaTime;
+            if (inRange && fireTimer <= 0f)
             {
-                if (playerHealth != null) playerHealth.TakeDamage(contactDamage);
-                if (anim != null) anim.SetTrigger(AttackHash);
-                contactTimer = contactInterval;
+                Shoot();
+                fireTimer = fireInterval;
             }
+        }
+
+        private void Shoot()
+        {
+            if (playerHealth != null) playerHealth.TakeDamage(shotDamage);
+            if (anim != null) anim.SetTrigger(AttackHash); // 播開槍動畫
         }
     }
 }
