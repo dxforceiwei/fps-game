@@ -17,7 +17,12 @@ namespace FPS
 
         private Transform player;
         private Health playerHealth;
+        private Animator anim;       // 有掛模型才有；沒有就全部跳過（仍能跑膠囊版）
         private float contactTimer;
+
+        // 動畫參數（由 FPS → 套用敵人模型+動畫 建好的 Animator 使用）
+        private static readonly int SpeedHash = Animator.StringToHash("Speed");
+        private static readonly int AttackHash = Animator.StringToHash("Attack");
 
         private void Start()
         {
@@ -29,7 +34,8 @@ namespace FPS
                 playerHealth = pc.GetComponent<Health>();
             }
 
-            GetComponent<Health>().Died += OnDied; // 自己死了就移除
+            anim = GetComponentInChildren<Animator>(); // 模型子物件上的 Animator
+            GetComponent<Health>().Died += OnDied;     // 自己死了就移除
         }
 
         private void OnDied() => Destroy(gameObject);
@@ -42,16 +48,21 @@ namespace FPS
             to.y = 0f; // 只在地面追，不要飛起來
             float dist = to.magnitude;
             Vector3 dir = dist > 0.001f ? to / dist : Vector3.zero;
+            bool inRange = dist <= contactRange;
 
-            // 移動 + 面向玩家
-            transform.position += dir * (moveSpeed * Time.deltaTime);
+            // 到貼身距離就停下來打，否則往玩家走
+            if (!inRange) transform.position += dir * (moveSpeed * Time.deltaTime);
             if (dir != Vector3.zero) transform.rotation = Quaternion.LookRotation(dir);
 
-            // 接觸傷害
+            // 驅動動畫：走路速度 → idle/run 切換
+            if (anim != null) anim.SetFloat(SpeedHash, inRange ? 0f : moveSpeed, 0.1f, Time.deltaTime);
+
+            // 接觸傷害（同時播攻擊動畫）
             contactTimer -= Time.deltaTime;
-            if (dist <= contactRange && contactTimer <= 0f)
+            if (inRange && contactTimer <= 0f)
             {
                 if (playerHealth != null) playerHealth.TakeDamage(contactDamage);
+                if (anim != null) anim.SetTrigger(AttackHash);
                 contactTimer = contactInterval;
             }
         }
