@@ -28,17 +28,24 @@ UI/HUD.cs                  準心 + 血量 + Game Over（IMGUI）
 
 程式碼跟外觀是分開的：邏輯掛在物件上，模型只是子物件的「外殼」。所以**現在就能換模型，不用改任何腳本**。
 
-**槍**
-1. 匯入模型（`.fbx` / `.glb`）到 `Assets/Models/`，Unity 會自動轉成可用資產。
-2. 把模型拖到相機（或玩家手部）底下當子物件，調好位置/縮放 → 這就是 view model。
-3. 在模型槍口處建一個空物件 `Muzzle`，拉進 `Gun` 的 **Muzzle** 欄位 → 閃光與曳光彈就從槍口發射。
+**槍（已附 CC0 模型，一鍵套用）**
 
-**敵人 / 人物**
-1. 匯入「有骨架（rigged）」的人物模型，建議用 [Mixamo](https://www.mixamo.com)（免費、可直接下載走路/攻擊動畫）。
-2. 把 `Enemy.prefab` 裡的膠囊外觀換成模型子物件（保留 Collider 與 `Health`、`Enemy` 腳本）。
-3. 加 `Animator` + Animator Controller，動畫之後再接（`Enemy.cs` 已經有移動方向可驅動 walk 動畫）。
+`Assets/Models/Blasters/` 已放入 [Kenney Blaster Kit](https://kenney.nl/assets/blaster-kit)（CC0，18 把 `blaster-a~r.fbx` + 貼圖）。
 
-> 我（Claude）能寫好程式與掛點，但**模型/貼圖是二進位美術檔，得你自己匯入**。免費來源：Mixamo（人）、Kenney、Quaternius、Unity Asset Store、Sketchfab(CC)。
+1. 開 Unity，等它把 `Assets/Models/Blasters/` 匯入完成（Console 不再轉圈）。
+2. 上方選單 **FPS → 套用槍枝模型到玩家**。會自動：把 `blaster-h` 掛到相機底下當 view model、建立 `Muzzle` 並接到 `Gun`。
+3. 選到階層裡的 `GunModel`，用移動/旋轉工具對著 Game 視窗微調到順眼（view model 的位置很吃個人喜好）。
+4. 想換別把槍：改 `Assets/Editor/ArtSetup.cs` 裡的 `BlasterPath`（`blaster-a`~`blaster-r`），再點一次選單。
+5. 槍若是灰白色，點該 `.fbx` → Inspector **Materials → Extract Materials**，把材質的 Base Map 指到 `Textures/colormap.png`。
+
+**敵人 / 人物（用 Mixamo，免費）**
+1. 到 [mixamo.com](https://www.mixamo.com)（Adobe 免費帳號）選一個角色，例如 **Zombie / Mutant / X Bot**。
+2. 下載：**Format = FBX for Unity(.fbx)**、**Pose = T-pose**、**With Skin** → 這是本體；放到 `Assets/Models/Enemy/`。
+3. 再下載動畫（同角色，**Without Skin**）：至少 **Walking** + 一個 **Attack/Punch**（殭屍就抓 Zombie 系列）。
+4. 把模型放到 `Enemy.prefab` 底下當外觀（保留膠囊上的 Collider、`Health`、`Enemy` 腳本），加 `Animator`。
+5. 動畫接線（`Enemy.cs` 已有移動方向可驅動 walk）我可以再幫你寫，先把檔案放進來即可。
+
+> 我（Claude）能下載 CC0 模型、寫好掛點與一鍵腳本，但 **Mixamo 需登入、貼圖/動畫是二進位美術檔**，這部分得你自己匯入。免費來源：Kenney、Quaternius、[poly.pizza](https://poly.pizza)、Mixamo（人）、Sketchfab(CC)。
 
 ## Mac 編輯器小提醒
 
