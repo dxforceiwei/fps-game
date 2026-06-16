@@ -9,8 +9,12 @@ namespace FPS
     public class HUD : MonoBehaviour
     {
         [SerializeField] private Health playerHealth;
+        [Tooltip("命中目標時 hitmarker 顯示秒數")]
+        [SerializeField] private float hitmarkerTime = 0.12f;
+
         private bool gameOver;
         private GUIStyle style;
+        private float hitmarkerTimer; // > 0 時畫 hitmarker
 
         private void Start()
         {
@@ -20,12 +24,42 @@ namespace FPS
                 if (pc != null) playerHealth = pc.GetComponent<Health>();
             }
             if (playerHealth != null) playerHealth.Died += OnPlayerDied;
+
+            // 訂閱槍的命中事件，命中就閃 hitmarker
+            var gun = Object.FindFirstObjectByType<Gun>();
+            if (gun != null) gun.HitConfirmed += OnHitConfirmed;
         }
+
+        private void Update()
+        {
+            if (hitmarkerTimer > 0f) hitmarkerTimer -= Time.unscaledDeltaTime;
+        }
+
+        private void OnHitConfirmed() => hitmarkerTimer = hitmarkerTime;
 
         private void OnPlayerDied()
         {
             gameOver = true;
             Time.timeScale = 0f; // 凍結
+        }
+
+        // 在中央準心畫一個小小的 X（四條斜短線）
+        private void DrawHitmarker(float cx, float cy)
+        {
+            GUI.color = Color.white;
+            const float gap = 4f, len = 7f, thick = 2f;
+            // 用旋轉的細長矩形畫四道斜線
+            Matrix4x4 prev = GUI.matrix;
+            void Slash(float angle, float ox, float oy)
+            {
+                GUIUtility.RotateAroundPivot(angle, new Vector2(cx, cy));
+                GUI.DrawTexture(new Rect(cx + ox, cy + oy, len, thick), Texture2D.whiteTexture);
+                GUI.matrix = prev;
+            }
+            Slash(45f, gap, -thick * 0.5f);
+            Slash(45f, -gap - len, -thick * 0.5f);
+            Slash(-45f, gap, -thick * 0.5f);
+            Slash(-45f, -gap - len, -thick * 0.5f);
         }
 
         private void OnGUI()
@@ -42,6 +76,9 @@ namespace FPS
             // 準心（中央小白點）
             GUI.color = Color.white;
             GUI.DrawTexture(new Rect(cx - 2f, cy - 2f, 4f, 4f), Texture2D.whiteTexture);
+
+            // 命中回饋（hitmarker）
+            if (hitmarkerTimer > 0f) DrawHitmarker(cx, cy);
 
             // 血量
             if (playerHealth != null)
